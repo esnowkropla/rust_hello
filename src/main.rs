@@ -15,14 +15,13 @@ fn main() {
     }
 }
 
-fn test(x: u32) -> ()
-{
-    println!("Testing");
-}
-
 fn handle_connection(mut stream: TcpStream) {
     let mut buffer: [u8; 512] = [0; 512];
-    stream.read(&mut buffer).unwrap();
+
+    match stream.read(&mut buffer) {
+        Ok(count) => println!("Read {} bytes", count),
+        Err(e) => println!("Got error {}", e),
+    }
 
     let get = b"GET / HTTP/1.1\r\n";
     let sleep = b"GET /sleep HTTP/1.1\r\n";

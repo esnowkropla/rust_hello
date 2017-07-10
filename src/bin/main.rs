@@ -5,13 +5,27 @@ use std::net::TcpListener;
 use std::net::TcpStream;
 use std::fs::File;
 
+extern crate hello;
+use hello::ThreadPool;
+
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
+    let pool = ThreadPool::new(4);
+
+    let mut counter = 0;
 
     for stream in listener.incoming() {
-        let stream = stream.unwrap();
+        if counter == 2 {
+            println!("shuttung down");
+            break;
+        }
 
-        handle_connection(stream);
+        counter += 1;
+
+        match stream {
+            Ok(result) => pool.execute(|| handle_connection(result)),
+            Err(e) => println!("got error {}", e),
+        }
     }
 }
 
@@ -35,7 +49,11 @@ fn handle_connection(mut stream: TcpStream) {
         ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "404.html")
     };
 
-    let mut file = File::open(filename).unwrap();
+    let mut file = match File::open(filename) {
+        Ok(result) => result,
+        Err(e) => panic!("Couldn't open file {}, got error: \"{}\"", filename, e),
+    };
+
     let mut contents = String::new();
 
     file.read_to_string(&mut contents).unwrap();
